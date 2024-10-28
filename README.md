@@ -21,7 +21,7 @@ Szefito Bot is a Discord bot designed for IP analysis using the ProxyCheck.io AP
 1. Clone this repository:
 
    ```bash
-   git clone https://github.com/your-repo/szefito-bot.git
+   git clone https://github.com/lucassobralofc/szefitoiplooker.git
    cd szefito-bot
    ```
 
