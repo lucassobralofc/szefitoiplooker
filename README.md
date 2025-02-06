@@ -1,89 +1,93 @@
-# Szefito Bot
+# 🔍 Szefito Bot 2.0
 
-**Version**: 1.1 (RC)  
-**Date**: October 27th, 2024  
-**Author**: Lucas V. Sobral, Brazil  
+**Version**: 2.0 | **Release Date**: February 06th, 2024  
+**Developer**: Lucas V. Sobral (Brazil) | **Host**: Eisberg  
+**Support Server**: [Join Discord](https://discord.gg/FHhvkRvgMH)
 
-## Overview
+![Security Shield](https://img.shields.io/badge/Security-Level_2-green) 
+![Python Version](https://img.shields.io/badge/Python-3.8%2B-blue)
 
-Szefito Bot is a Discord bot designed for IP analysis using the ProxyCheck.io API. It allows users to verify if an IP address is a proxy, VPN, or business-related address, making it useful for managing secure environments or handling suspicious activity.
-
-## Features
-
-- **IP Address Check**: Use `!szefito checkproxy <IP_Address>` to analyze if an IP is associated with a proxy, VPN, or business entity.
-- **Help Command**: Access detailed help using `!szefito help` or specific help for a command, like `!szefito help checkproxy`.
-- **Info Command**: Provides information about the bot, its creator, and includes a motivational message.
-- **CSV File Handling**: Szefito Bot can handle CSV files with IP addresses sent in DMs, analyzing them for proxy or VPN presence and sending back organized responses.
-- **Privacy**: Szefito Bot only uses data from ProxyCheck.io's API without storing any user data. See the privacy policy for more details.
-
-## Installation
-
-1. Clone this repository:
-
-   ```bash
-   git clone https://github.com/lucassobralofc/szefitoiplooker.git
-   cd szefito-bot
-   ```
-
-2. Install required dependencies:
-
-   ```bash
-   pip install discord requests
-   ```
-
-3. Replace the `TOKEN` in `main.py` with your bot's actual token.
-
-4. Run Requirements.txt
-   ```bash
-   python3 -m pip install -r requirements.txt
-   ```
-
-5. Run the bot:
-
-   ```bash
-   python3 main.py
-   ```
-
-## Usage
-
-- **Prefix**: The bot uses `!szefito` as a prefix for all commands.
-
-### Commands
-
-- **Check Proxy**:  
-  `!szefito checkproxy <IP_Address>`  
-  Checks if the provided IP address is a proxy, VPN, or business IP.
-
-- **Info**:  
-  `!szefito info`  
-  Displays bot information and a motivational message.
-
-- **Help**:  
-  `!szefito help`  
-  Provides an overview of all commands. Use `!szefito help <command>` for command-specific help.
-
-### Handling CSV Files in DMs
-
-Szefito Bot can receive a CSV file via DM in the format:
-
-```
-ip_address;usernames;last_use_unix;last_use
-```
-
-The bot will analyze each IP in the file and respond with proxy and region details.
-
-## Privacy Policy
-
-Szefito Bot respects user privacy, only accessing public data provided by ProxyCheck.io's API. You can view ProxyCheck.io's privacy policy [here](https://proxycheck.io/privacy). No private user data is stored or accessed by Szefito Bot. By using Szefito Bot, you agree to this policy.
+## 🌟 Overview
+Advanced Discord bot for IP analysis leveraging ProxyCheck.io's API. Now with enhanced security and CSV processing capabilities!
 
 ---
 
-This bot was created with the intent to make IP analysis accessible while respecting user privacy. Enjoy using Szefito Bot, and feel free to contribute or suggest new features!
+## 🚀 Key Features
+### 🔒 Security Enhancements
+- End-to-end encrypted IP verification
+- Token isolation in `.env` file
+- Zero data storage policy
+- Secure CSV processing via DMs
 
---- 
+### ⚡ Core Functionality
+- **Proxy/VPN Detection**: `!checkproxy <IP>`
+- **Batch Processing**: Analyze CSV files via DM
+- **Instant Help**: `!helpme <command>`
+- **Bot Insights**: `!info` command
 
-hosted by eisberg, thanks an lot
-ideas:szefito, jpx13 and panda
+---
 
-if you want use without hosting, here are the link how to use
-https://discord.gg/FHhvkRvgMH
+## 🛠️ Installation Guide
+```bash
+git clone https://github.com/lucassobralofc/szefitoiplooker.git
+cd szefito-bot
+python3 -m pip install -r requirements.txt
+```
+
+### Configuration
+1. Create `.env` file:
+```env
+DISCORD_TOKEN=your_bot_token_here
+```
+
+2. **Never commit** `.env` to version control!
+
+---
+
+## 📋 Command Reference
+| Command | Description | Example |
+|---------|-------------|---------|
+| `!checkproxy` | IP analysis | `!checkproxy 192.168.1.1` |
+| `!info` | Bot details | `!info` |
+| `!helpme` | Command help | `!helpme checkproxy` |
+
+---
+
+## 📁 CSV Processing
+### DM the bot with CSV files containing:
+```csv
+ip_address;usernames;last_use_unix;last_use
+```
+
+### Output Format:
+```
+IP: 192.168.1.1
+Proxy: Yes (VPN)
+Organization: Example Corp
+Region: North America
+```
+
+---
+
+## 🔐 Privacy Policy
+- Zero user data storage
+- All data processed through ProxyCheck.io ([Privacy Policy](https://proxycheck.io/privacy))
+- Full Discord system encryption
+
+---
+
+## 🙌 Credits & Acknowledgments
+**Core Team**:  
+- Szefito (Concept)  
+- JPX13 (Concept)  
+- Panda (Testing)  
+
+**Special Thanks**:  
+Eisberg for hosting support
+
+---
+
+## ❓ Support & Self-Hosting
+[![Support Server](https://img.shields.io/discord/849576827627339776?label=Support%20Server&style=for-the-badge)](https://discord.gg/FHhvkRvgMH)
+
+For self-hosting assistance, join our Discord community!
