@@ -1,134 +1,203 @@
 import discord
 import requests
 import csv
+import os
+import asyncio
+import re
+from dotenv import load_dotenv
 from discord.ext import commands
 
-# Replace TOKEN with your actual token
-TOKEN = 'your-discord-bot-token'
+# Load environment variables from .env file, making the bot code more "safe"
+load_dotenv()
+TOKEN = os.getenv('DISCORD_TOKEN')
 
 intents = discord.Intents.default()
 intents.message_content = True
-bot = commands.Bot(command_prefix='!szefito ', intents=intents)
+bot = commands.Bot(command_prefix='!', intents=intents)
+
+# IP validation regex, idk what is that "thanks stalkoverflow" 
+IP_REGEX = r'^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$'
+
+def create_proxy_embed(ip_address, ip_info):
+    """Create an embed for proxy check results."""
+    embed = discord.Embed(
+        title="Proxy Check Results",
+        description=f"Information for IP: {ip_address}",
+        color=0x00ff00 if ip_info['proxy'] == 'no' else 0xff0000
+    )
+    
+    fields = [
+        ("Provider", ip_info.get('provider', 'Unknown'), True),
+        ("Country", ip_info.get('country', 'Unknown'), True),
+        ("Proxy", "Yes" if ip_info.get('proxy') == 'yes' else "No", True),
+        ("Type", ip_info.get('type', 'N/A'), True),
+        ("City", ip_info.get('city', 'Unknown'), True),
+        ("ASN", ip_info.get('asn', 'Unknown'), True),
+        ("Risk", str(ip_info.get('risk', 'N/A')), True)
+    ]
+    
+    for name, value, inline in fields:
+        embed.add_field(name=name, value=value, inline=inline)
+    
+    return embed
 
 @bot.command()
+@commands.cooldown(1, 10, commands.BucketType.user)
 async def checkproxy(ctx, ip_address: str):
-    url = f"https://proxycheck.io/v2/{ip_address}?vpn=1&asn=1"
-    response = requests.get(url).json()
-    
-    if response['status'] == "ok":
-        ip_info = response[ip_address]
-        is_proxy = "Yes" if ip_info['proxy'] == "yes" else "No"
-        response_msg = (
-            f"**IP Address**: {ip_address}\n"
-            f"**Provider**: {ip_info['provider']}\n"
-            f"**Country**: {ip_info['country']}\n"
-            f"**Proxy**: {is_proxy}\n"
-            f"**Type**: {ip_info['type']}\n"
-        )
-        await ctx.send(response_msg)
+    """Check if an IP address is a proxy/VPN"""
+    if not re.match(IP_REGEX, ip_address):
+        await ctx.send("Invalid IP address format. Please use x.x.x.x format.")
+        return
+
+    try:
+        response = requests.get(
+            f"https://proxycheck.io/v2/{ip_address}?vpn=1&asn=1",
+            timeout=10
+        ).json()
+    except Exception as e:
+        await ctx.send(f"Error accessing proxycheck.io: {str(e)}")
+        return
+
+    if response.get('status') == "ok":
+        ip_info = response.get(ip_address, {})
+        embed = create_proxy_embed(ip_address, ip_info)
+        await ctx.send(embed=embed)
     else:
-        await ctx.send("Failed to retrieve data from proxycheck.io.")
+        await ctx.send("Failed to retrieve data from proxycheck.io. The IP might be invalid or the service is unavailable.")
 
 @bot.command()
 async def info(ctx):
-    await ctx.send(
-        "This bot was created by Szefito, Brazil. "
-        "Keep pushing forward, you are capable of great things!"
-      
-        "thanks to eisberg for host and help, ideas help from:szefito,jpx13 and panda
+    """Show bot information"""
+    embed = discord.Embed(
+        title="Szefito Bot Information",
+        description="Keep pushing forward, you are capable of great things!",
+        color=0x7289DA
     )
+    embed.add_field(name="Creator", value="Lucas Sobral (Szefito), Brazil", inline=False)
+    embed.add_field(name="Version", value="2.0(RC)", inline=False)
+    embed.add_field(name="Source", value="https://github.com/lucassobralofc/szefitoiplooker", inline=False)
+    await ctx.send(embed=embed)
 
 @bot.command(name='helpme')
-async def szefito_help(ctx, *args):
-    if len(args) == 0:
-        help_message = """
-        **Szefito Bot Help:**
-
-        **Commands:**
-        - **checkproxy <IP_Address>**:  
-          Check if the provided IP address is a proxy, VPN, or associated with any businesses.  
-          **Usage**: `!szefito checkproxy <IP_Address>`
-
-        - **info**:  
-          Get information about the bot, its creator, and a motivational phrase.  
-          **Usage**: `!szefito info`
-
-        - **help**:  
-          Display this help message, providing details on all available commands. You can also get more information on a specific command.  
-          **Usage**:  
-            - General help: `!szefito help`  
-            - Command-specific help: `!szefito help checkproxy`
-
-        **How it works**:  
-        The bot uses the command prefix `!szefito`, followed by the command name and any necessary parameters. It processes proxy checks for IP addresses, gives bot information, and provides more through simple commands.
-
-        **Examples:**
-        - To check if an IP is a proxy: `!szefito checkproxy 177.37.148.151`
-        - To get info about the bot: `!szefito info`
-
-        You can type `!szefito help <command>` to get more specific help for each command.
-        """
-        await ctx.send(help_message)
+async def szefito_help(ctx, command_name: str = None):
+    """Show help information,(deepseek & szefito)"""
+    if not command_name:
+        embed = discord.Embed(
+            title="Szefito Bot Help",
+            description="Command prefix: `!`\nUse `!helpme <command>` for detailed help",
+            color=0x7289DA
+        )
+        
+        commands_info = {
+            'checkproxy': 'Check if an IP is a proxy/VPN',
+            'info': 'Show bot information',
+            'helpme': 'Show this help message'
+        }
+        
+        for cmd, desc in commands_info.items():
+            embed.add_field(name=f"!{cmd}", value=desc, inline=False)
+        
+        embed.set_footer(text="Support: contact@example.com")
+        await ctx.send(embed=embed)
     else:
-        command = args[0]
-        if command == 'checkproxy':
-            await ctx.send("""
-            **checkproxy <IP_Address>**:  
-            Check if the provided IP address is a proxy, VPN, or associated with any businesses.  
-            **Usage**: `!szefito checkproxy 177.37.148.151`
-            """)
-        elif command == 'info':
-            await ctx.send("""
-            **info**:  
-            Get information about the bot, its creator (Szefito, Brazil), and a motivational phrase.  
-            **Usage**: `!szefito info`
-            """)
+        command = bot.get_command(command_name)
+        if command:
+            embed = discord.Embed(
+                title=f"Help for !{command.name}",
+                description=command.help,
+                color=0x7289DA
+            )
+            await ctx.send(embed=embed)
         else:
-            await ctx.send(f"Unknown command `{command}`. Type `!szefito help` for available commands.")
+            await ctx.send(f"Command `{command_name}` not found.")
+
+async def process_csv(file_content):
+    """Process CSV content and return results"""
+    csv_text = file_content.decode('utf-8').splitlines()
+    csv_reader = csv.reader(csv_text, delimiter=';')
+    results = []
+    
+    for row_number, row in enumerate(csv_reader, 1):
+        if not row:
+            continue
+            
+        ip_address = row[0].strip()
+        if not re.match(IP_REGEX, ip_address):
+            results.append(f"Row {row_number}: Invalid IP format")
+            continue
+
+        try:
+            response = requests.get(
+                f"https://proxycheck.io/v2/{ip_address}?vpn=1&asn=1",
+                timeout=10
+            ).json()
+            await asyncio.sleep(1)  # Rate limiting
+        except Exception as e:
+            results.append(f"Row {row_number}: Error - {str(e)}")
+            continue
+
+        if response.get('status') == "ok":
+            ip_info = response.get(ip_address, {})
+            result = (
+                f"IP: {ip_address}\n"
+                f"Proxy: {'Yes' if ip_info.get('proxy') == 'yes' else 'No'} | "
+                f"Type: {ip_info.get('type', 'N/A')}\n"
+                f"Location: {ip_info.get('city', 'Unknown')}, {ip_info.get('country', 'Unknown')}\n"
+                f"Provider: {ip_info.get('provider', 'Unknown')}\n"
+                f"{'-'*40}"
+            )
+            results.append(result)
+        else:
+            results.append(f"Row {row_number}: Failed to check IP")
+    
+    return results
 
 @bot.event
 async def on_message(message):
-    if isinstance(message.channel, discord.DMChannel) or message.guild is None:
-        if message.attachments and message.attachments[0].filename.endswith('.csv'):
-            attachment = message.attachments[0]
+    if message.author == bot.user:
+        return
 
-            processing_message = await message.channel.send("Processing IP addresses, please wait...")
-
-            csv_content = await attachment.read()
-            csv_text = csv_content.decode('utf-8').splitlines()
-            csv_reader = csv.reader(csv_text, delimiter=';')
-            results = []
-
-            for row in csv_reader:
-                ip_address = row[0]
-                url = f"https://proxycheck.io/v2/{ip_address}?vpn=1&asn=1"
-                response = requests.get(url).json()
+    # Process CSV(better,safer)
+    if isinstance(message.channel, discord.DMChannel) and message.attachments:
+        for attachment in message.attachments:
+            if attachment.filename.endswith('.csv'):
+                processing_msg = await message.channel.send("⏳ Processing CSV file... (This may take a few minutes)")
                 
-                if response['status'] == "ok":
-                    ip_info = response[ip_address]
-                    is_proxy = "Yes" if ip_info['proxy'] == "yes" else "No"
-                    city = ip_info.get('city', 'Unknown')
-                    country = ip_info.get('country', 'Unknown')
-                    provider = ip_info.get('provider', 'Unknown')
-                    result = (
-                        f"**IP**: {ip_address}\n"
-                        f"  • **Proxy**: {is_proxy}\n"
-                        f"  • **Type**: {ip_info.get('type', 'N/A')}\n"
-                        f"  • **City**: {city}, **Country**: {country}\n"
-                        f"  • **Provider**: {provider}\n"
+                try:
+                    file_content = await attachment.read()
+                    results = await process_csv(file_content)
+                    
+                    if not results:
+                        await processing_msg.edit(content="❌ No valid IP addresses found in the CSV file.")
+                        return
+
+                    # Write results to a temporary file
+                    with open('results.txt', 'w') as f:
+                        f.write('\n\n'.join(results))
+                    
+                    # Send results as a file
+                    await message.channel.send(
+                        content="✅ Processing complete! Here are your results:",
+                        file=discord.File('results.txt')
                     )
-                    results.append(result)
-
-            message_content = "\n\n".join(results)
-
-            if len(message_content) > 2000:
-                chunks = [message_content[i:i+2000] for i in range(0, len(message_content), 2000)]
-                await processing_message.edit(content="We got a reply! Here are the results:")
-                for chunk in chunks:
-                    await message.channel.send(chunk)
-            else:
-                await processing_message.edit(content=f"We got a reply! Here are the results:\n{message_content}")
+                    await processing_msg.delete()
+                    
+                except Exception as e:
+                    await message.channel.send(f"❌ Error processing file: {str(e)}")
+                finally:
+                    if os.path.exists('results.txt'):
+                        os.remove('results.txt')
 
     await bot.process_commands(message)
 
-bot.run(TOKEN)
+@bot.event
+async def on_command_error(ctx, error):
+    if isinstance(error, commands.CommandOnCooldown):
+        await ctx.send(f"⏳ Command is on cooldown. Try again in {error.retry_after:.1f} seconds.")
+    elif isinstance(error, commands.MissingRequiredArgument):
+        await ctx.send("❌ Missing required argument. Use !helpme for command usage.")
+    else:
+        await ctx.send(f"❌ An error occurred, call Szefito!: {str(error)}")
+
+if __name__ == "__main__":
+    bot.run(TOKEN)
