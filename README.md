@@ -30,7 +30,7 @@ Advanced Discord bot for IP analysis leveraging ProxyCheck.io's API. Now with en
 ## 🛠️ Installation Guide
 ```bash
 git clone https://github.com/lucassobralofc/szefitoiplooker.git
-cd szefito-bot
+cd szefitoiplooker
 python3 -m pip install -r requirements.txt
 ```
 
