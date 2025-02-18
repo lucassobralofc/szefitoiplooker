@@ -4,10 +4,11 @@ import csv
 import os
 import asyncio
 import re
+import datetime  # Needed for timestamp conversion
 from dotenv import load_dotenv
 from discord.ext import commands
 
-# Load environment variables from .env file, making the bot code more "safe"
+# Load environment variables from .env file, making the bot code safer
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
 
@@ -15,15 +16,24 @@ intents = discord.Intents.default()
 intents.message_content = True
 bot = commands.Bot(command_prefix='!', intents=intents)
 
-# IP validation regex, idk what is that "thanks stalkoverflow" 
+# IP validation regex
 IP_REGEX = r'^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$'
+
+def convert_unix_timestamp(timestamp_str):
+    """Convert a Unix timestamp to a human-readable date."""
+    try:
+        # Handle both float and integer timestamps
+        timestamp = float(timestamp_str)
+        return datetime.datetime.fromtimestamp(timestamp).strftime('%Y-%m-%d %H:%M:%S')
+    except (ValueError, TypeError, OverflowError):
+        return "Invalid timestamp"
 
 def create_proxy_embed(ip_address, ip_info):
     """Create an embed for proxy check results."""
     embed = discord.Embed(
         title="Proxy Check Results",
         description=f"Information for IP: {ip_address}",
-        color=0x00ff00 if ip_info['proxy'] == 'no' else 0xff0000
+        color=0x00ff00 if ip_info.get('proxy') == 'no' else 0xff0000
     )
     
     fields = [
@@ -44,7 +54,7 @@ def create_proxy_embed(ip_address, ip_info):
 @bot.command()
 @commands.cooldown(1, 10, commands.BucketType.user)
 async def checkproxy(ctx, ip_address: str):
-    """Check if an IP address is a proxy/VPN"""
+    """Check if an IP address is a proxy/VPN."""
     if not re.match(IP_REGEX, ip_address):
         await ctx.send("Invalid IP address format. Please use x.x.x.x format.")
         return
@@ -67,20 +77,20 @@ async def checkproxy(ctx, ip_address: str):
 
 @bot.command()
 async def info(ctx):
-    """Show bot information"""
+    """Show bot information."""
     embed = discord.Embed(
         title="Szefito Bot Information",
         description="Keep pushing forward, you are capable of great things!",
         color=0x7289DA
     )
-    embed.add_field(name="Creator", value="Lucas Sobral (Szefito), Brazil", inline=False)
-    embed.add_field(name="Version", value="2.0(RC)", inline=False)
-    embed.add_field(name="Source", value="https://github.com/lucassobralofc/szefitoiplooker", inline=False)
+    embed.add_field(name="Creator", value="Szefito, Brazil", inline=False)
+    embed.add_field(name="Version", value="2.0", inline=False)
+    embed.add_field(name="Source", value="https://github.com/yourrepo", inline=False)
     await ctx.send(embed=embed)
 
 @bot.command(name='helpme')
 async def szefito_help(ctx, command_name: str = None):
-    """Show help information,(deepseek & szefito)"""
+    """Show help information (deepseek & szefito)."""
     if not command_name:
         embed = discord.Embed(
             title="Szefito Bot Help",
@@ -112,43 +122,55 @@ async def szefito_help(ctx, command_name: str = None):
             await ctx.send(f"Command `{command_name}` not found.")
 
 async def process_csv(file_content):
-    """Process CSV content and return results"""
+    """
+    Process CSV content and return results.
+    Expected CSV format: IP;username(s);last_use_unix;last_use_days
+    """
     csv_text = file_content.decode('utf-8').splitlines()
     csv_reader = csv.reader(csv_text, delimiter=';')
     results = []
     
     for row_number, row in enumerate(csv_reader, 1):
-        if not row:
+        if not row or len(row) < 4:
+            results.append(f"Row {row_number}: Invalid row format")
             continue
             
-        ip_address = row[0].strip()
-        if not re.match(IP_REGEX, ip_address):
-            results.append(f"Row {row_number}: Invalid IP format")
-            continue
-
         try:
-            response = requests.get(
-                f"https://proxycheck.io/v2/{ip_address}?vpn=1&asn=1",
-                timeout=10
-            ).json()
-            await asyncio.sleep(1)  # Rate limiting
-        except Exception as e:
-            results.append(f"Row {row_number}: Error - {str(e)}")
-            continue
+            ip_address = row[0].strip()
+            usernames = row[1].strip()
+            last_use_unix = row[2].strip()
+            last_use_days = row[3].strip()
+            
+            if not re.match(IP_REGEX, ip_address):
+                results.append(f"Row {row_number}: Invalid IP format")
+                continue
 
-        if response.get('status') == "ok":
-            ip_info = response.get(ip_address, {})
-            result = (
-                f"IP: {ip_address}\n"
-                f"Proxy: {'Yes' if ip_info.get('proxy') == 'yes' else 'No'} | "
-                f"Type: {ip_info.get('type', 'N/A')}\n"
-                f"Location: {ip_info.get('city', 'Unknown')}, {ip_info.get('country', 'Unknown')}\n"
-                f"Provider: {ip_info.get('provider', 'Unknown')}\n"
-                f"{'-'*40}"
-            )
-            results.append(result)
-        else:
-            results.append(f"Row {row_number}: Failed to check IP")
+            # Convert timestamp to human-readable date
+            human_date = convert_unix_timestamp(last_use_unix)
+            
+            # Get proxy information
+            url = f"https://proxycheck.io/v2/{ip_address}?vpn=1&asn=1"
+            response = requests.get(url, timeout=10).json()
+            await asyncio.sleep(1)  # Rate limiting
+
+            if response.get('status') == "ok":
+                ip_info = response.get(ip_address, {})
+                result = (
+                    f"IP: {ip_address}\n"
+                    f"Usernames: {usernames}\n"
+                    f"Last Used: {human_date} (Last Use Days: {last_use_days})\n"
+                    f"Proxy: {'Yes' if ip_info.get('proxy') == 'yes' else 'No'} | "
+                    f"Type: {ip_info.get('type', 'N/A')}\n"
+                    f"Location: {ip_info.get('city', 'Unknown')}, {ip_info.get('country', 'Unknown')}\n"
+                    f"Provider: {ip_info.get('provider', 'Unknown')}\n"
+                    f"{'-'*40}"
+                )
+                results.append(result)
+            else:
+                results.append(f"Row {row_number}: Failed to check IP {ip_address}")
+
+        except Exception as e:
+            results.append(f"Row {row_number}: Error processing - {str(e)}")
     
     return results
 
@@ -157,7 +179,7 @@ async def on_message(message):
     if message.author == bot.user:
         return
 
-    # Process CSV(better,safer)
+    # Process CSV attachments sent via DM
     if isinstance(message.channel, discord.DMChannel) and message.attachments:
         for attachment in message.attachments:
             if attachment.filename.endswith('.csv'):
@@ -168,11 +190,11 @@ async def on_message(message):
                     results = await process_csv(file_content)
                     
                     if not results:
-                        await processing_msg.edit(content="❌ No valid IP addresses found in the CSV file.")
+                        await processing_msg.edit(content="❌ No valid data found in CSV file.")
                         return
 
                     # Write results to a temporary file
-                    with open('results.txt', 'w') as f:
+                    with open('results.txt', 'w', encoding='utf-8') as f:
                         f.write('\n\n'.join(results))
                     
                     # Send results as a file
