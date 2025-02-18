@@ -80,17 +80,17 @@ async def info(ctx):
     """Show bot information."""
     embed = discord.Embed(
         title="Szefito Bot Information",
-        description="Keep pushing forward, you are capable of great things!",
+        description="https://x.com/takszefito/status/1884409675677868526",
         color=0x7289DA
     )
     embed.add_field(name="Creator", value="Szefito, Brazil", inline=False)
     embed.add_field(name="Version", value="2.0", inline=False)
-    embed.add_field(name="Source", value="https://github.com/yourrepo", inline=False)
+    embed.add_field(name="Source", value="https://github.com/lucassobralofc/szefitoiplooker/", inline=False)
     await ctx.send(embed=embed)
 
 @bot.command(name='helpme')
 async def szefito_help(ctx, command_name: str = None):
-    """Show help information (deepseek & szefito)."""
+    """Show help information."""
     if not command_name:
         embed = discord.Embed(
             title="Szefito Bot Help",
@@ -107,7 +107,7 @@ async def szefito_help(ctx, command_name: str = None):
         for cmd, desc in commands_info.items():
             embed.add_field(name=f"!{cmd}", value=desc, inline=False)
         
-        embed.set_footer(text="Support: contact@example.com")
+        embed.set_footer(text="Support:lucassobralofc@mail.com")
         await ctx.send(embed=embed)
     else:
         command = bot.get_command(command_name)
