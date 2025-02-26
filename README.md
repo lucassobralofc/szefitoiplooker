@@ -32,6 +32,9 @@ Advanced Discord bot for IP analysis leveraging ProxyCheck.io's API. Now with en
 git clone https://github.com/lucassobralofc/szefitoiplooker.git
 cd szefitoiplooker
 python3 -m pip install -r requirements.txt
+nano .env
+***copy and paste the env configuration, down below and the bot token***
+python3 main.py
 ```
 
 ### Configuration
