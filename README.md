@@ -1,7 +1,7 @@
 # 🔍 Szefito Bot 2.0
 
 **Version**: 2.0 | **Release Date**: February 06th, 2024  
-**Developer**: Lucas V. Sobral (Brazil) | **Host**: Eisberg  
+**Developer**: Lucas V. Sobral (Brazil) 
 **Support Server**: [Join Discord](https://discord.gg/FHhvkRvgMH)
 
 ![Security Shield](https://img.shields.io/badge/Security-Level_2-green) 
@@ -86,7 +86,7 @@ Region: North America
 - Panda (Testing)  
 
 **Special Thanks**:  
-Eisberg for hosting support
+Eisberg for hosting support,Pastel For Hosting too!
 
 ---
 
