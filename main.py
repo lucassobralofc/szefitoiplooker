@@ -4,11 +4,10 @@ import csv
 import os
 import asyncio
 import re
-import datetime  # Needed for timestamp conversion
+import datetime
 from dotenv import load_dotenv
 from discord.ext import commands
 
-# Load environment variables from .env file, making the bot code safer
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
 
@@ -16,13 +15,11 @@ intents = discord.Intents.default()
 intents.message_content = True
 bot = commands.Bot(command_prefix='!', intents=intents)
 
-# IP validation regex
 IP_REGEX = r'^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$'
 
 def convert_unix_timestamp(timestamp_str):
     """Convert a Unix timestamp to a human-readable date."""
     try:
-        # Handle both float and integer timestamps
         timestamp = float(timestamp_str)
         return datetime.datetime.fromtimestamp(timestamp).strftime('%Y-%m-%d %H:%M:%S')
     except (ValueError, TypeError, OverflowError):
@@ -36,6 +33,9 @@ def create_proxy_embed(ip_address, ip_info):
         color=0x00ff00 if ip_info.get('proxy') == 'no' else 0xff0000
     )
     
+    # Safely get devices information
+    devices = ip_info.get('devices', {})
+    
     fields = [
         ("Provider", ip_info.get('provider', 'Unknown'), True),
         ("Country", ip_info.get('country', 'Unknown'), True),
@@ -43,6 +43,8 @@ def create_proxy_embed(ip_address, ip_info):
         ("Type", ip_info.get('type', 'N/A'), True),
         ("City", ip_info.get('city', 'Unknown'), True),
         ("ASN", ip_info.get('asn', 'Unknown'), True),
+        ("Hostname", ip_info.get('hostname', 'Unknown'), True),
+        ("Devices", f"Address: {devices.get('address', 'N/A')}\nSubnet: {devices.get('subnet', 'N/A')}", True),  # Added devices
         ("Risk", str(ip_info.get('risk', 'N/A')), True)
     ]
     
@@ -84,7 +86,7 @@ async def info(ctx):
         color=0x7289DA
     )
     embed.add_field(name="Creator", value="Szefito, Brazil", inline=False)
-    embed.add_field(name="Version", value="2.0", inline=False)
+    embed.add_field(name="Version", value="2.3.1 (API Update, Please Verify GitHub!)", inline=False)
     embed.add_field(name="Source", value="https://github.com/lucassobralofc/szefitoiplooker/", inline=False)
     await ctx.send(embed=embed)
 
@@ -145,16 +147,16 @@ async def process_csv(file_content):
                 results.append(f"Row {row_number}: Invalid IP format")
                 continue
 
-            # Convert timestamp to human-readable date
             human_date = convert_unix_timestamp(last_use_unix)
             
-            # Get proxy information
             url = f"https://proxycheck.io/v2/{ip_address}?vpn=1&asn=1"
             response = requests.get(url, timeout=10).json()
-            await asyncio.sleep(1)  # Rate limiting
+            await asyncio.sleep(1)
 
             if response.get('status') == "ok":
                 ip_info = response.get(ip_address, {})
+                devices = ip_info.get('devices', {})
+                
                 result = (
                     f"IP: {ip_address}\n"
                     f"Usernames: {usernames}\n"
@@ -162,6 +164,8 @@ async def process_csv(file_content):
                     f"Proxy: {'Yes' if ip_info.get('proxy') == 'yes' else 'No'} | "
                     f"Type: {ip_info.get('type', 'N/A')}\n"
                     f"Location: {ip_info.get('city', 'Unknown')}, {ip_info.get('country', 'Unknown')}\n"
+                    f"Hostname: {ip_info.get('hostname', 'N/A')}\n"
+                    f"Devices: Address={devices.get('address', 'N/A')}, Subnet={devices.get('subnet', 'N/A')}\n"  # Added devices
                     f"Provider: {ip_info.get('provider', 'Unknown')}\n"
                     f"{'-'*40}"
                 )
@@ -179,7 +183,6 @@ async def on_message(message):
     if message.author == bot.user:
         return
 
-    # Process CSV attachments sent via DM
     if isinstance(message.channel, discord.DMChannel) and message.attachments:
         for attachment in message.attachments:
             if attachment.filename.endswith('.csv'):
@@ -193,11 +196,9 @@ async def on_message(message):
                         await processing_msg.edit(content="❌ No valid data found in CSV file.")
                         return
 
-                    # Write results to a temporary file
                     with open('results.txt', 'w', encoding='utf-8') as f:
                         f.write('\n\n'.join(results))
                     
-                    # Send results as a file
                     await message.channel.send(
                         content="✅ Processing complete! Here are your results:",
                         file=discord.File('results.txt')
