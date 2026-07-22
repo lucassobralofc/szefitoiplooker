@@ -43,7 +43,6 @@ python3 main.py
 DISCORD_TOKEN=your_bot_token_here
 ```
 
-2. **Never commit** `.env` to version control!
 
 ---
 
